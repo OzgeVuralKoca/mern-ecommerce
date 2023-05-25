@@ -26,3 +26,8 @@ body {
     box-shadow: none;
     border-color: rgb(240, 238, 238);
 }
+
+.head {
+    padding-top: 80px;
+    min-height: 85vh;
+}

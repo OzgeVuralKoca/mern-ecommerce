@@ -1,0 +1,13 @@
+.loginform {
+    flex-direction: column;
+    flex-wrap: wrap;
+}
+
+a {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.logo-width {
+    width: 208px;
+}

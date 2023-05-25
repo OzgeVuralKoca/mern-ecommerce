@@ -3,13 +3,13 @@ import { SlBasket } from 'react-icons/sl'
 import { CartContext } from '../Context/CartProvider'
 import { Link } from 'react-router-dom'
 
-const HeaderCartButton = () => {
+const HeaderCartButton = ({user}) => {
     const {items} = useContext(CartContext)
 
     const totalItemsInCart = items.length
 
     return (
-        <Link to='/cart'
+        <Link to={user ? '/cart' : '/login'}
           className="btn btn-outline-info btn-sm fw-semibold rounded-3 px-4 py-2"
           type="submit"
         >
