@@ -1,117 +1,132 @@
 /* eslint-disable no-case-declarations */
-import { createContext, useReducer } from "react"
+import { createContext, useEffect, useReducer } from "react"
+import axios from 'axios'
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-export const CartContext = createContext()
-
-// Toaster Error
-const notifyError = () => toast.error('Ürün stoğu yetersiz!', {
-position: "top-center",
-autoClose: 3000,
-hideProgressBar: false,
-closeOnClick: true,
-pauseOnHover: true,
-draggable: true,
-progress: undefined,
-theme: "dark",
+const notifySuccess = (message) => toast.success(message, {
+  position: "top-center",
+  autoClose: 3000,
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true,
+  progress: undefined,
+  theme: "dark",
 });
 
-// Toaster Success
-const notifySuccess = () => toast.success('Ürün sepete eklendi.', {
-position: "top-center",
-autoClose: 3000,
-hideProgressBar: false,
-closeOnClick: true,
-pauseOnHover: true,
-draggable: true,
-progress: undefined,
-theme: "dark",
-});
-
-const itemsData = JSON.parse(localStorage.getItem('items')) || [];
-
-const getDefaultTotalAmount = () => {
-  return itemsData.reduce((total, item) => total + item.price * item.amount, 0);
-}
+export const CartContext = createContext();
 
 const defaultCartState = {
-  items: itemsData,
-  totalAmount: getDefaultTotalAmount()
+  cartItems: [],
+  totalAmount: 0,
+  amount: 0,
 }
 
 const cartReducer = (state, action) => {
-
   switch (action.type) {
-    case "ADD":
-      const existingCartItemIndex = state.items.findIndex(
-        (item) => item.id === action.item.id
-      );
-      let updatedItems = [...state.items];
-
-      if (existingCartItemIndex !== -1) {
-        if (state.items[existingCartItemIndex].amount < state.items[existingCartItemIndex].stock) {
-          updatedItems[existingCartItemIndex] = {
-            ...state.items[existingCartItemIndex],
-            amount: state.items[existingCartItemIndex].amount + action.item.amount
-          }
-          notifySuccess()
-        } else {
-          notifyError()
-        }
+    case 'SET_CART':
+      return {
+        ...state,
+        cartItems: action.payload
+      };
+    case 'ADD_TO_CART':
+      const existingItemIndex = state.cartItems.findIndex(item => item._id === action.payload._id);
+      console.log(existingItemIndex)
+      if (existingItemIndex !== -1) {
+        // Eğer ürün zaten sepete ekliyse sadece amount değerini güncelle
+        const updatedCartItems = [...state.cartItems];
+        const existingItem = updatedCartItems[existingItemIndex];
+        return {
+          ...state,
+          cartItems: updatedCartItems,
+          amount: state.amount + 1, 
+          totalAmount: state.totalAmount + existingItem.price,
+          
+          
+        };
       } else {
-        updatedItems = [...state.items, action.item];
+        // Yeni bir ürünse sepete ekle
+        const newCartItem = {
+          ...action.payload
+        };
+        return {
+          ...state,
+          cartItems: [...state.cartItems, newCartItem],
+          totalAmount: state.totalAmount + action.payload.price,
+          amount: 1,
+        };
       }
-
-      const newTotalAmount = state.totalAmount + action.item.price * action.item.amount
-      localStorage.setItem('items', JSON.stringify(updatedItems))
-      localStorage.setItem('totalAmount', JSON.stringify(newTotalAmount))
+    case 'REMOVE_FROM_CART':
+      const removedItem = state.cartItems.find(item => item._id === action.payload);
+      if (!removedItem) {
+        return state; // Ürün bulunamadıysa mevcut durumu döndür
+      }
+      const removedItemAmount = removedItem.amount;
+      const updatedCartItems = state.cartItems.filter(item => item._id !== action.payload);
       return {
-        items: updatedItems,
-        totalAmount: newTotalAmount
+        ...state,
+        cartItems: updatedCartItems,
+        totalAmount: state.totalAmount - (removedItemAmount * removedItem.price)
       };
-    case "REMOVE":
-      const filteredItems = state.items.filter((item) => item.id !== action.id);
-      const itemToRemove = state.items.find((item) => item.id === action.id);
-      const newRemovedTotalAmount = state.totalAmount - itemToRemove.price * itemToRemove.amount
-
-      localStorage.setItem('items', JSON.stringify(filteredItems))
-      localStorage.setItem('totalAmount', JSON.stringify(newRemovedTotalAmount))
-      return {
-        items: filteredItems,
-        totalAmount: newRemovedTotalAmount
-      };
-
-    case "CLEAR":
-      localStorage.removeItem('items', 'totalAmount')
-      return defaultCartState;
-
     default:
-      return state
+      return state;
   }
-}
+};
 
-const CartProvider = ({ children }) => {
+const CartProvider = ({ children, fetchData }) => {
+  const user = JSON.parse(localStorage.getItem('user'))
+
   const [cartState, dispatchCartAction] = useReducer(
     cartReducer,
     defaultCartState
   )
 
-  const cartProviderValue = {
-    items: cartState.items,
-    totalAmount: cartState.totalAmount,
-    addItem: (item) => {
-      dispatchCartAction({ type: "ADD", item })
-    },
-    removeItem: (id) => {
-      dispatchCartAction({ type: "REMOVE", id });
-    },
-    clearItem: () => {
-      dispatchCartAction({ type: "CLEAR" })
+  const fetchCartItems = async () => {
+      try {
+        let model = { userId: user._id };
+        const response = await axios.post('http://localhost:5000/api/cart', model);
+        dispatchCartAction({ type: 'SET_CART', payload: response.data });
+      } catch (error) {
+        console.log('Error fetching cart items:', error);
+      }
+    };
+
+  useEffect(() => {
+    fetchCartItems();
+  }, []);
+
+  const addToCart = async (item) => {
+    try {
+      const response = await axios.post('http://localhost:5000/api/cart/add', {
+        productId: item._id,
+        userId: user._id,
+      });
+      notifySuccess(response.data.message);
+      dispatchCartAction({ type: 'ADD_TO_CART', payload: item });
+      fetchData();
+    } catch (error) {
+      console.log(error.message);
     }
-  }
+  };
 
-  return <CartContext.Provider value={cartProviderValue}>{children}</CartContext.Provider>
-}
+  const removeFromCart = (itemId) => {
+    dispatchCartAction({ type: 'REMOVE_FROM_CART', payload: itemId });
+  };
 
-export default CartProvider
+  const cartContextValue = {
+    cartItems: cartState.cartItems,
+    totalAmount: cartState.totalAmount,
+    amount: cartState.amount,
+    addToCart,
+    removeFromCart,
+  };
+
+  return (
+    <CartContext.Provider value={cartContextValue}>
+      {children}
+    </CartContext.Provider>
+  );
+};
+
+export default CartProvider;

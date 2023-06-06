@@ -4,11 +4,9 @@ const cartSchema = new mongoose.Schema(
     {
         _id: String,
         productId: String,
-        userId: String,
-        quantity: Number,
-        price: Number
+        userId: String
     }
 )
 
-const Cart = mongoose.model("Cart", cartSchema)
-export default Cart
+const Cart = mongoose.model("Cart", cartSchema);
+export default Cart;

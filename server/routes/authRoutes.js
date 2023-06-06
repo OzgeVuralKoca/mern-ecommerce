@@ -19,7 +19,8 @@ authRouter.post("/register", async (req, res) => {
                 _id: uuidv4(),
                 name: name,
                 email: email,
-                password: hashedPassword
+                password: hashedPassword,
+                isAdmin: false
             }
         );
         await user.save();

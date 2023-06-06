@@ -1,12 +1,24 @@
-import { useContext } from 'react';
-import { CartContext } from '../Context/CartProvider';
 import { MdStarRate } from "react-icons/md"
 import './ProductItem.css'
-import { ToastContainer } from 'react-toastify';
+import axios from "axios";
+import { notifySuccess } from "../UI/Toastify";
+import { ToastContainer } from "react-toastify";
 
-const ProductItem = ({ product }) => {
-  const { id, img, name, rate, price } = product;
-  const { addItem } = useContext(CartContext)
+
+const ProductItem = ({ product, fetchData }) => {
+  const { _id, imageUrl, name, rate, price } = product;
+
+  const addToCart = async (productId) => {
+    try {
+      let user = JSON.parse(localStorage.getItem("user"));
+      let model = {productId: productId, userId: user._id};
+      const response = await axios.post('http://localhost:5000/api/cart/add', model);
+      notifySuccess(response.data.message);
+      fetchData()
+    } catch (error) {
+      console.log(error.message);
+    }
+  }
 
   const rateStars = () => {
     if (rate === 5) {
@@ -68,7 +80,7 @@ const ProductItem = ({ product }) => {
   return (
     <div className="card rounded-4 product-card mx-auto my-3">
       <img height="200"
-        src={img} className="product-img rounded-top-4" alt={name} />
+        src={'http://localhost:5000/' + imageUrl} className="product-img rounded-top-4" alt={name} />
       <div className="card-body d-flex flex-column" >
         <h6 className="card-text product-name">{name}</h6>
         <div className="text-dark mt-1">
@@ -76,15 +88,25 @@ const ProductItem = ({ product }) => {
           <h5 className="card-text product-price fw-semibold">{price} TL</h5>
         </div>
         <div className='d-flex gap-2'>
+          {product.stock > 0
+            ?
+            <button
+              className="btn btn-sm btn-info w-50 fw-semibold rounded-3"
+              onClick={() => addToCart(product._id)}
+            >
+              Sepete Ekle
+            </button>
+            :
+            <button
+              className="btn btn-sm btn-info w-50 fw-semibold rounded-3"
+              disabled
+            >
+              Stokta Yok!
+            </button>
+          }
           <button
-            className="btn btn-sm btn-info w-50 fw-semibold rounded-3"
-            onClick={() => addItem(product)}
-          >
-            Sepete Ekle
-          </button>
-          <button 
             className="btn btn-sm btn-outline-info fw-semibold w-50 rounded-3"
-            onClick={() => window.location = `detail/${id}`}
+            onClick={() => window.location = `detail/${_id}`}
           >
             Detaylar
           </button>
