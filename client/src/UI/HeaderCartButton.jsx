@@ -2,8 +2,9 @@ import { SlBasket } from 'react-icons/sl'
 import { Link } from 'react-router-dom'
 
 const HeaderCartButton = ({user, cart}) => {
+    console.log(cart)
 
-    const totalItemsInCart = cart?.length
+    const totalItemsInCart = cart.length
 
     return (
         <Link to={user ? '/cart' : '/login'}

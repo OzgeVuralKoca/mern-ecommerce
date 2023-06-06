@@ -4,47 +4,9 @@ import DeliveryDate from "../ProductDetails/DeliveryDate"
 import { Link } from "react-router-dom"
 import products from '../images/techproducts.jpg'
 import axios from "axios"
-import { useEffect, useState } from "react"
 
-const Cart = ({ cart, setCart }) => {
-
-    const [totalAmount, setTotalAmount] = useState(null);
-    const user = JSON.parse(localStorage.getItem("user"));
+const Cart = ({ cart, totalAmount, getTheCart }) => {
     const hasItems = cart.length > 0
-
-    const getTheCart = async () => {
-        let model = { userId: user._id };
-        let response = await axios.post("http://localhost:5000/api/cart/", model);
-
-        const groupedCartItems = groupCartItems(response.data);
-        setCart(groupedCartItems);
-
-        let totalC = 0;
-        for (let i = 0; i < groupedCartItems.length; i++) {
-            totalC += groupedCartItems[i].products[0].price * groupedCartItems[i].amount;
-        }
-        setTotalAmount(totalC);
-    };
-
-    useEffect(() => {
-        getTheCart();
-    }, [])
-
-    const groupCartItems = (cartItems) => {
-        const groupedItems = [];
-        cartItems.forEach((item) => {
-            console.log(groupedItems)
-            console.log(item)
-            const existingItem = groupedItems.find((groupedItem) => groupedItem.productId === item.productId);
-            if (existingItem) {
-                existingItem.amount += 1; // Aynı ürün varsa miktarı artır
-            } else {
-                item.amount = 1; // Yeni bir ürün ekleniyorsa miktarı 1 olarak ayarla
-                groupedItems.push(item);
-            }
-        });
-        return groupedItems;
-    };
 
     const removeFromCart = async (_id) => {
         let confirm = window.confirm("Sepetteki ürünü silmek istiyor musunuz?")
